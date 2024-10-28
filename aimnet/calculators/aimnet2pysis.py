@@ -16,8 +16,9 @@ EV2AU = 1 / AU2EV
 
 
 class AIMNet2Pysis(Calculator):
-    implemented_properties: ClassVar = ['energy', 'forces', 'free_energy', 'charges', 'stress']
-    def __init__(self, model: AIMNet2Calculator | str = 'aimnet2', charge=0, mult=1, **kwargs):
+    implemented_properties: ClassVar = ["energy", "forces", "free_energy", "charges", "stress"]
+
+    def __init__(self, model: AIMNet2Calculator | str = "aimnet2", charge=0, mult=1, **kwargs):
         super().__init__(charge=charge, mult=mult, **kwargs)
         if isinstance(model, str):
             model = AIMNet2Calculator(model)
@@ -33,16 +34,20 @@ class AIMNet2Pysis(Calculator):
 
     @staticmethod
     def _results_get_energy(results):
-        return results['energy'].item() * EV2AU
+        return results["energy"].item() * EV2AU
 
     @staticmethod
     def _results_get_forces(results):
-        return (results['forces'].detach() * (EV2AU / ANG2BOHR)).flatten().to(torch.double).cpu().numpy()
+        return (results["forces"].detach() * (EV2AU / ANG2BOHR)).flatten().to(torch.double).cpu().numpy()
 
     @staticmethod
     def _results_get_hessian(results):
-        return (results['hessian'].flatten(0, 1).flatten(-2, -1) * (EV2AU / ANG2BOHR / ANG2BOHR)).to(torch.double).cpu().numpy()
-
+        return (
+            (results["hessian"].flatten(0, 1).flatten(-2, -1) * (EV2AU / ANG2BOHR / ANG2BOHR))
+            .to(torch.double)
+            .cpu()
+            .numpy()
+        )
 
     def get_energy(self, atoms, coords):
         _in = self._prepere_input(atoms, coords)
@@ -67,6 +72,5 @@ class AIMNet2Pysis(Calculator):
 
 
 def run_pysis():
-    pysisyphus.run.CALC_DICT['aimnet'] = AIMNet2Pysis
+    pysisyphus.run.CALC_DICT["aimnet"] = AIMNet2Pysis
     pysisyphus.run.run()
-

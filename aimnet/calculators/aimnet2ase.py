@@ -13,6 +13,7 @@ class AIMNet2ASE(Calculator):
     from typing import ClassVar
 
     implemented_properties: ClassVar[list] = ["energy", "forces", "free_energy", "charges", "stress"]
+
     def __init__(self, base_calc: AIMNet2Calculator | str = "aimnet2", charge=0, mult=1):
         super().__init__()
         if isinstance(base_calc, str):
@@ -71,7 +72,7 @@ class AIMNet2ASE(Calculator):
             "coord": torch.tensor(self.atoms.positions, dtype=torch.float32, device=self.base_calc.device),
             "numbers": self._t_numbers,
             "charge": self._t_charge,
-            "mult": self._t_mult
+            "mult": self._t_mult,
         }
 
         _unsqueezed = False
@@ -87,7 +88,7 @@ class AIMNet2ASE(Calculator):
         for k, v in results.items():
             if _unsqueezed:
                 v = v.squeeze(0)
-            results[k] = v.detach().cpu().numpy() # type: ignore
+            results[k] = v.detach().cpu().numpy()  # type: ignore
 
         self.results["energy"] = results["energy"]
         self.results["charges"] = results["charges"]

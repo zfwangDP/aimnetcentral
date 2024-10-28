@@ -99,13 +99,13 @@ class AIMNet2Calculator:
             if self._coulomb_method == "simple":
                 warnings.warn("Switching to DSF Coulomb for PBC", stacklevel=1)
                 self.set_lrcoulomb_method("dsf")
-        if data['coord'].ndim == 2:
+        if data["coord"].ndim == 2:
             data = self.make_nbmat(data)
             data = self.pad_input(data)
         return data
 
     def process_output(self, data: Dict[str, Tensor]) -> Dict[str, Tensor]:
-        if data['coord'].ndim == 2:
+        if data["coord"].ndim == 2:
             data = self.unpad_output(data)
         data = self.mol_unflatten(data)
         data = self.keep_only(data)
@@ -135,7 +135,7 @@ class AIMNet2Calculator:
         if ndim == 2:
             # single molecule or already flattened
             self._batch = None
-            if 'mol_idx' not in data:
+            if "mol_idx" not in data:
                 data["mol_idx"] = torch.zeros(data["coord"].shape[0], dtype=torch.long, device=self.device)
                 self._max_mol_size = data["coord"].shape[0]
             elif data["mol_idx"][-1] == 0:
@@ -182,7 +182,11 @@ class AIMNet2Calculator:
                 maxnb2 = min(calc_max_nb(self.cutoff_lr, self.max_density), self._max_mol_size) if self.lr else None  # type: ignore
                 maxnb = (maxnb1, maxnb2)
                 nbmat1, nbmat2, shifts1, shifts2 = calc_nbmat(
-                    data["coord"], (self.cutoff, self.cutoff_lr), maxnb, cell, data.get("mol_idx") # type: ignore
+                    data["coord"],
+                    (self.cutoff, self.cutoff_lr),
+                    maxnb,  # type: ignore
+                    cell,
+                    data.get("mol_idx"),  # type: ignore
                 )
                 break
             except ValueError:
@@ -308,4 +312,4 @@ def iter_lrcoulomb_mods(model):
 
 
 def calc_max_nb(cutoff: float, density: float = 0.2) -> int | float:
-    return int(density * 4 / 3 * 3.14159 * cutoff**3) if cutoff < float('inf') else float('inf')
+    return int(density * 4 / 3 * 3.14159 * cutoff**3) if cutoff < float("inf") else float("inf")

@@ -43,9 +43,9 @@ def load_dataset(cfg: omegaconf.DictConfig, kind="train"):
         shard = None
 
     extra_kwargs = {
-            "keys": keys,
-            "shard": shard,
-        }
+        "keys": keys,
+        "shard": shard,
+    }
     cfg.datasets[kind].kwargs.update(extra_kwargs)
     cfg.datasets[kind].args = [cfg[kind]]
     ds = build_module(OmegaConf.to_container(cfg.datasets[kind]))  # type: ignore[arg-type]
@@ -99,22 +99,25 @@ def get_loaders(cfg: omegaconf.DictConfig):
         logging.info(f"Loaded validation dataset from {cfg.val} with {len(ds_val)} samples.")
     else:
         if cfg.separate_val:
-            ds_train, ds_val = ds_train.random_split(1-cfg.val_fraction, cfg.val_fraction)
-            logging.info(f"Randomly train dataset into train and val datasets, sizes {len(ds_train)} and {len(ds_val)} {cfg.val_fraction*100:.1f}%.")
+            ds_train, ds_val = ds_train.random_split(1 - cfg.val_fraction, cfg.val_fraction)
+            logging.info(
+                f"Randomly train dataset into train and val datasets, sizes {len(ds_train)} and {len(ds_val)} {cfg.val_fraction * 100:.1f}%."
+            )
         else:
             ds_val = ds_train.random_split(cfg.val_fraction)[0]
-            logging.info(f"Using a random fraction ({cfg.val_fraction*100:.1f}%, {len(ds_val)} samples) of train dataset for validation.")
+            logging.info(
+                f"Using a random fraction ({cfg.val_fraction * 100:.1f}%, {len(ds_val)} samples) of train dataset for validation."
+            )
 
     # merge small groups
-    ds_train.merge_groups(min_size=8*cfg.samplers.train.kwargs.batch_size,
-        mode_atoms=cfg.samplers.train.kwargs.batch_mode=="atoms")
+    ds_train.merge_groups(
+        min_size=8 * cfg.samplers.train.kwargs.batch_size, mode_atoms=cfg.samplers.train.kwargs.batch_mode == "atoms"
+    )
     logging.info("After merging small groups in train dataset")
     log_ds_group_sizes(ds_train)
 
-    loader_train = ds_train.get_loader(get_sampler(ds_train, cfg, kind="train"),
-                                       cfg.x, cfg.y, **cfg.loaders.train)
-    loader_val = ds_val.get_loader(get_sampler(ds_val, cfg, kind="val"),
-                                    cfg.x, cfg.y, **cfg.loaders.val)
+    loader_train = ds_train.get_loader(get_sampler(ds_train, cfg, kind="train"), cfg.x, cfg.y, **cfg.loaders.train)
+    loader_val = ds_val.get_loader(get_sampler(ds_val, cfg, kind="val"), cfg.x, cfg.y, **cfg.loaders.val)
     return loader_train, loader_val
 
 
@@ -199,7 +202,7 @@ def build_model(cfg, forces=False):
         raise TypeError("Model configuration must be a dictionary.")
     model = build_module(d)
     if forces is not None:
-        model = Forces(model) # type: ignore[attr-defined]
+        model = Forces(model)  # type: ignore[attr-defined]
     return model
 
 
@@ -252,11 +255,12 @@ def prepare_batch(batch: Dict[str, Tensor], device="cuda", non_blocking=True) ->
 
 
 def default_trainer(
-        model: torch.nn.Module,
-        optimizer: torch.optim.Optimizer,
-        loss_fn: Union[Callable, torch.nn.Module],
-        device: Optional[Union[str, torch.device]] = None,
-        non_blocking: bool = True) -> Engine:
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    loss_fn: Union[Callable, torch.nn.Module],
+    device: Optional[Union[str, torch.device]] = None,
+    non_blocking: bool = True,
+) -> Engine:
     def _update(engine: Engine, batch: Tuple[Dict[str, Tensor], Dict[str, Tensor]]) -> float:
         model.train()
         optimizer.zero_grad()
@@ -268,20 +272,23 @@ def default_trainer(
         torch.nn.utils.clip_grad_value_(model.parameters(), 0.4)
         optimizer.step()
         return loss.item()
+
     return Engine(_update)
 
 
 def default_evaluator(
-        model: torch.nn.Module,
-        device: Optional[Union[str, torch.device]] = None,
-        non_blocking: bool = True) -> Engine:
-    def _inference(engine: Engine, batch: Tuple[Dict[str, Tensor], Dict[str, Tensor]]) -> Tuple[Dict[str, Tensor], Dict[str, Tensor]]:
+    model: torch.nn.Module, device: Optional[Union[str, torch.device]] = None, non_blocking: bool = True
+) -> Engine:
+    def _inference(
+        engine: Engine, batch: Tuple[Dict[str, Tensor], Dict[str, Tensor]]
+    ) -> Tuple[Dict[str, Tensor], Dict[str, Tensor]]:
         model.eval()
         x = prepare_batch(batch[0], device=device, non_blocking=non_blocking)  # type: ignore
         y = prepare_batch(batch[1], device=device, non_blocking=non_blocking)  # type: ignore
         with torch.no_grad():
             y_pred = model(x)
         return y_pred, y
+
     return Engine(_inference)
 
 
@@ -289,6 +296,7 @@ class TerminateOnLowLR:
     def __init__(self, optimizer, low_lr=1e-5):
         self.low_lr = low_lr
         self.optimizer = optimizer
+
     def __call__(self, engine):
         if self.optimizer.param_groups[0]["lr"] < self.low_lr:
             engine.terminate()
@@ -301,10 +309,12 @@ def build_engine(model, optimizer, scheduler, loss_fn, metrics, cfg, loader_val)
     trainer = train_fn(model, optimizer, loss_fn, device=device, non_blocking=True)
     # check for NaNs after each epoch
     trainer.add_event_handler(Events.EPOCH_COMPLETED, TerminateOnNan())
+
     # log LR
     def log_lr(engine):
         lr = optimizer.param_groups[0]["lr"]
         logging.info(f"LR: {lr}")
+
     trainer.add_event_handler(Events.EPOCH_STARTED, log_lr)
     # write TQDM progress
     if idist.get_local_rank() == 0:
@@ -343,48 +353,46 @@ def setup_wandb(cfg, model_cfg, model, trainer, validator, optimizer):
     from ignite.handlers.wandb_logger import OptimizerParamsHandler
 
     init_kwargs = OmegaConf.to_container(cfg.wandb.init, resolve=True)
-    wandb.init(**init_kwargs) # type: ignore
+    wandb.init(**init_kwargs)  # type: ignore
     wandb_logger = WandBLogger(init=False)
 
-    OmegaConf.save(model_cfg, wandb.run.dir + "/model.yaml") # type: ignore
-    OmegaConf.save(cfg, wandb.run.dir + "/train.yaml") # type: ignore
+    OmegaConf.save(model_cfg, wandb.run.dir + "/model.yaml")  # type: ignore
+    OmegaConf.save(cfg, wandb.run.dir + "/train.yaml")  # type: ignore
 
     wandb_logger.attach_output_handler(
         trainer,
         event_name=Events.ITERATION_COMPLETED(every=200),
         output_transform=lambda loss: {"loss": loss},
-        tag="train"
-        )
+        tag="train",
+    )
     wandb_logger.attach_output_handler(
         validator,
         event_name=Events.EPOCH_COMPLETED,
         global_step_transform=lambda *_: trainer.state.iteration,
         metric_names="all",
-        tag="val"
-        )
+        tag="val",
+    )
 
     class EpochLRLogger(OptimizerParamsHandler):
         def __call__(self, engine, logger, event_name):
             global_step = engine.state.iteration
             params = {
-                f"{self.param_name}_{i}": float(g[self.param_name])
-                for i, g in enumerate(self.optimizer.param_groups)
+                f"{self.param_name}_{i}": float(g[self.param_name]) for i, g in enumerate(self.optimizer.param_groups)
             }
             logger.log(params, step=global_step, sync=self.sync)
 
-    wandb_logger.attach(
-        trainer,
-        log_handler=EpochLRLogger(optimizer),
-        event_name=Events.EPOCH_STARTED
-        )
+    wandb_logger.attach(trainer, log_handler=EpochLRLogger(optimizer), event_name=Events.EPOCH_STARTED)
 
     score_function = lambda engine: 1.0 / engine.state.metrics["loss"]
     model_checkpoint = ModelCheckpoint(
-            wandb.run.dir, n_saved=1, filename_prefix="best", # type: ignore
-            require_empty=False, score_function=score_function,
-            global_step_transform=global_step_from_engine(trainer)
-        )
+        wandb.run.dir,  # type: ignore
+        n_saved=1,
+        filename_prefix="best",  # type: ignore
+        require_empty=False,
+        score_function=score_function,
+        global_step_transform=global_step_from_engine(trainer),
+    )
     validator.add_event_handler(Events.EPOCH_COMPLETED, model_checkpoint, {"model": unwrap_module(model)})
 
     if cfg.wandb.watch_model:
-        wandb.watch(unwrap_module(model), **OmegaConf.to_container(cfg.wandb.watch_model, resolve=True)) # type: ignore
+        wandb.watch(unwrap_module(model), **OmegaConf.to_container(cfg.wandb.watch_model, resolve=True))  # type: ignore

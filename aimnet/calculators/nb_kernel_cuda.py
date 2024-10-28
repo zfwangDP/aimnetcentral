@@ -5,6 +5,7 @@ from numba.core import config
 
 config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
+
 @numba.cuda.jit(fastmath=True, cache=True)
 def _nbmat_dual_cuda(coord, cutoff1_squared, cutoff2_squared, mol_idx, mol_end_idx, nbmat1, nbmat2, nnb1, nnb2):
     N = coord.shape[0]

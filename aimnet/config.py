@@ -27,9 +27,7 @@ def get_module(name: str) -> Callable:
     return func  # type: ignore[no-any-return]
 
 
-def get_init_module(
-    name: str, args: Optional[List] = None, kwargs: Optional[Dict] = None
-) -> Callable:
+def get_init_module(name: str, args: Optional[List] = None, kwargs: Optional[Dict] = None) -> Callable:
     """
     Get the initialized module based on the given name, arguments, and keyword arguments.
 
@@ -81,7 +79,7 @@ def load_yaml(
             config = Template(config).render(**hyperpar)
         config = yaml.load(config, Loader=yaml.FullLoader)  # noqa: S506
     # plugin yaml configs
-    for d, k, v in _iter_rec_bottomup(config): # type: ignore[arg-type]
+    for d, k, v in _iter_rec_bottomup(config):  # type: ignore[arg-type]
         if isinstance(v, str) and any(v.endswith(x) for x in (".yml", ".yaml")):
             if not os.path.isfile(v):
                 v = os.path.join(basedir, v)
@@ -126,7 +124,7 @@ def build_module(
     if isinstance(hyperpar, str):
         hyperpar = load_yaml(hyperpar)  # type: ignore[assignment]
     if hyperpar and not isinstance(hyperpar, dict):
-            raise TypeError("Hyperpar must be a dictionary")
+        raise TypeError("Hyperpar must be a dictionary")
     config = load_yaml(config, hyperpar)
     for d, k, v in _iter_rec_bottomup(config):
         if isinstance(v, dict) and "class" in v:

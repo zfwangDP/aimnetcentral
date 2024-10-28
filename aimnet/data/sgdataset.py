@@ -101,8 +101,7 @@ class DataGroup:
         self[new] = self.pop(old)
 
     def sample(self, idx, keys=None) -> "DataGroup":
-        """ Return a new `DataGroup` with the data indexed by `idx`.
-        """
+        """Return a new `DataGroup` with the data indexed by `idx`."""
         if keys is None:
             keys = self.keys()
         if isinstance(idx, int):
@@ -230,7 +229,7 @@ class SizeGroupedDataset:
             for k, g in f.items():
                 k = int(k)
                 self[k] = DataGroup(g, keys=keys, shard=shard)
-            self._meta = dict(f.attrs) # type: ignore[attr-defined]
+            self._meta = dict(f.attrs)  # type: ignore[attr-defined]
 
     def keys(self) -> List[int]:
         return sorted(self._data.keys())
@@ -372,7 +371,7 @@ class SizeGroupedDataset:
         keys = self.datakeys()
         for sg in sgroups:
             for k in keys:
-                arrs = [self[n][k] for n in sg] # type: ignore
+                arrs = [self[n][k] for n in sg]  # type: ignore
                 arrs = self._collate(arrs)
                 self[sg[-1]]._data[k] = arrs  # type: ignore
             for n in sg[:-1]:

@@ -71,7 +71,7 @@ def calc_nbmat(
         shifts = torch.from_numpy(shifts).to(device)
         shifts1 = torch.full((N, maxnb[0], 3), -1, dtype=torch.long, device=device)
         if _dual_cutoff:
-            shifts2 = torch.full((N, maxnb[1], 3), -1, dtype=torch.long, device=device) # type: ignore
+            shifts2 = torch.full((N, maxnb[1], 3), -1, dtype=torch.long, device=device)  # type: ignore
 
     # convert tensors and launch the kernel
     if _cuda:
@@ -98,14 +98,14 @@ def calc_nbmat(
                     _coord,
                     _cell,
                     cutoffs[0] ** 2,
-                    cutoffs[1] ** 2, # type: ignore
+                    cutoffs[1] ** 2,  # type: ignore
                     _shifts,
                     _nnb1,
                     _nnb2,
                     _nbmat1,
                     _nbmat2,
                     _shifts1,
-                    _shifts2
+                    _shifts2,
                 )
             else:
                 _kernel_nbmat_pbc[blocks_per_grid, threads_per_block](  # type: ignore
@@ -122,7 +122,7 @@ def calc_nbmat(
                 _kernel_nbmat_dual[blocks_per_grid, threads_per_block](  # type: ignore
                     _coord,
                     cutoffs[0] ** 2,
-                    cutoffs[1] ** 2, # type: ignore
+                    cutoffs[1] ** 2,  # type: ignore
                     _mol_idx,
                     _mol_end_idx,
                     _nbmat1,
@@ -159,7 +159,7 @@ def calc_nbmat(
                     _coord,
                     _cell,
                     cutoffs[0] ** 2,
-                    cutoffs[1] ** 2, # type: ignore
+                    cutoffs[1] ** 2,  # type: ignore
                     _shifts,
                     _nnb1,
                     _nnb2,
@@ -173,7 +173,7 @@ def calc_nbmat(
                 _kernel_nbmat_dual(
                     _coord,
                     cutoffs[0] ** 2,
-                    cutoffs[1] ** 2, # type: ignore
+                    cutoffs[1] ** 2,  # type: ignore
                     _mol_idx,
                     _mol_end_idx,
                     _nbmat1,
@@ -193,14 +193,14 @@ def calc_nbmat(
         raise ValueError(f"maxnb is too small: {nnb1_max=}, {maxnb=}")
     nbmat1 = nbmat1[:, :nnb1_max]  # type: ignore
     if _pbc:
-        shifts1 = shifts1[:, :nnb1_max] # type: ignore
+        shifts1 = shifts1[:, :nnb1_max]  # type: ignore
     if _dual_cutoff:
         nnb2_max = nnb2.max().item()
-        if nnb2_max > maxnb[1]: # type: ignore
+        if nnb2_max > maxnb[1]:  # type: ignore
             raise ValueError(f"maxnb is too small: {nnb1_max=}, {nnb2_max=}, {maxnb=}")
         nbmat2 = nbmat2[:, :nnb2_max]
         if _pbc:
-            shifts2 = shifts2[:, :nnb2_max] # type: ignore
+            shifts2 = shifts2[:, :nnb2_max]  # type: ignore
     else:
         nbmat2 = None
     return nbmat1, nbmat2, shifts1, shifts2

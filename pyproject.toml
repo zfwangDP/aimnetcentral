@@ -76,7 +76,7 @@ testpaths = ["tests"]
 target-version = "py39"
 line-length = 120
 fix = true
-select = [
+lint.select = [
     # flake8-2020
     "YTT",
     # flake8-bandit
@@ -108,7 +108,7 @@ select = [
     # tryceratops
     "TRY",
 ]
-ignore = [
+lint.ignore = [
     # LineTooLong
     "E501",
     # DoNotAssignLambda
@@ -139,3 +139,4 @@ source = ["aimnet"]
 [tool.deptry.per_rule_ignores]
 DEP001 = ["ase", "pysisyphus"]
 DEP003 = ["ase", "pysisyphus"]
+DEP004 = ["ase", "pysisyphus"]

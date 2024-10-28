@@ -46,15 +46,10 @@ class AIMNet2(AIMNet2Base):
             nn.init.orthogonal_(self.afv.weight[1:])
             if d2features:
                 self.afv.weight = nn.Parameter(
-                    self.afv.weight.clone()
-                    .unsqueeze(-1)
-                    .expand(64, nfeature, nshifts_s)
-                    .flatten(-2, -1)
+                    self.afv.weight.clone().unsqueeze(-1).expand(64, nfeature, nshifts_s).flatten(-2, -1)
                 )
 
-        conv_param = {
-            "nshifts_s": nshifts_s, "nshifts_v": nshifts_v, "ncomb_v": ncomb_v, "do_vector": True
-        }
+        conv_param = {"nshifts_s": nshifts_s, "nshifts_v": nshifts_v, "ncomb_v": ncomb_v, "do_vector": True}
         self.conv_a = ConvSV(nchannel=nfeature, d2features=d2features, **conv_param)
         self.conv_q = ConvSV(nchannel=num_charge_channels, d2features=False, **conv_param)
 
@@ -64,32 +59,26 @@ class AIMNet2(AIMNet2Base):
                 n_in=self.conv_a.output_size() + nfeature_tot,
                 n_out=nfeature_tot + 2 * num_charge_channels,
                 hidden=hidden[0],
-                **mlp_param
+                **mlp_param,
             )
         ]
         mlp_param = {"activation_fn": nn.GELU(), "last_linear": False}
         for h in hidden[1:-1]:
             mlps.append(
                 MLP(
-                    n_in=self.conv_a.output_size()
-                    + self.conv_q.output_size()
-                    + nfeature_tot
-                    + num_charge_channels,
+                    n_in=self.conv_a.output_size() + self.conv_q.output_size() + nfeature_tot + num_charge_channels,
                     n_out=nfeature_tot + 2 * num_charge_channels,
                     hidden=h,
-                    **mlp_param
+                    **mlp_param,
                 )
             )
         mlp_param = {"activation_fn": nn.GELU(), "last_linear": False}
         mlps.append(
             MLP(
-                n_in=self.conv_a.output_size()
-                + self.conv_q.output_size()
-                + nfeature_tot
-                + num_charge_channels,
+                n_in=self.conv_a.output_size() + self.conv_q.output_size() + nfeature_tot + num_charge_channels,
                 n_out=aim_size,
                 hidden=hidden[-1],
-                **mlp_param
+                **mlp_param,
             )
         )
         self.mlps = nn.ModuleList(mlps)
@@ -101,21 +90,15 @@ class AIMNet2(AIMNet2Base):
         else:
             raise TypeError("`outputs` is not either list or dict")
 
-    def _preprocess_spin_polarized_charge(
-        self, data: Dict[str, Tensor]
-    ) -> Dict[str, Tensor]:
+    def _preprocess_spin_polarized_charge(self, data: Dict[str, Tensor]) -> Dict[str, Tensor]:
         if "mult" not in data:
             raise ValueError("mult key is required for NSE if two channels for charge are not provided")
         _half_spin = 0.5 * (data["mult"] - 1.0)
         _half_q = 0.5 * data["charge"]
-        data["charge"] = torch.stack(
-            [_half_q + _half_spin, _half_q - _half_spin], dim=-1
-        )
+        data["charge"] = torch.stack([_half_q + _half_spin, _half_q - _half_spin], dim=-1)
         return data
 
-    def _postprocess_spin_polarized_charge(
-        self, data: Dict[str, Tensor]
-    ) -> Dict[str, Tensor]:
+    def _postprocess_spin_polarized_charge(self, data: Dict[str, Tensor]) -> Dict[str, Tensor]:
         data["spin_charges"] = data["charges"][..., 0] - data["charges"][..., 1]
         data["charges"] = data["charges"].sum(dim=-1)
         data["charge"] = data["charge"].sum(dim=-1)
@@ -135,9 +118,7 @@ class AIMNet2(AIMNet2Base):
         _in = torch.cat([q_i.squeeze(-2), avf_q], dim=-1)
         return _in
 
-    def _update_q(
-        self, data: Dict[str, Tensor], x: Tensor, delta_q: bool = True
-    ) -> Dict[str, Tensor]:
+    def _update_q(self, data: Dict[str, Tensor], x: Tensor, delta_q: bool = True) -> Dict[str, Tensor]:
         _q, _f, delta_a = x.split(
             [
                 self.num_charge_channels,
@@ -180,9 +161,7 @@ class AIMNet2(AIMNet2Base):
             if ipass == 0:
                 _in = self._prepare_in_a(data)
             else:
-                _in = torch.cat(
-                    [self._prepare_in_a(data), self._prepare_in_q(data)], dim=-1
-                )
+                _in = torch.cat([self._prepare_in_a(data), self._prepare_in_q(data)], dim=-1)
 
             _out = mlp(_in)
             if data["_input_padded"].item():

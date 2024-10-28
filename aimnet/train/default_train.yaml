@@ -4,11 +4,11 @@ run_name: ???
 data:
     # path to train and validation datasets
     train: ???
-    val: null  # same data file by default
+    val: null # same data file by default
     # sae files
     sae:
         energy:
-            file: '???'
+            file: "???"
             mode: linreg
 
     # fraction of training data to use for validation is separate val file is not provided
@@ -64,24 +64,24 @@ data:
 
 # definition for loss function class. Modify if trainig on different targets
 loss:
-  class: aimnet.train.loss.MTLoss
-  kwargs:
-    components:
-        energy:
-            fn: aimnet.train.loss.energy_loss_fn
-            weight: 1.0
-        forces:
-            fn: aimnet.train.loss.peratom_loss_fn
-            weight: 0.2
-            kwargs:
-                key_true: forces
-                key_pred: forces
-        charges:
-            fn: aimnet.train.loss.peratom_loss_fn
-            weight: 0.05
-            kwargs:
-                key_true: charges
-                key_pred: charges
+    class: aimnet.train.loss.MTLoss
+    kwargs:
+        components:
+            energy:
+                fn: aimnet.train.loss.energy_loss_fn
+                weight: 1.0
+            forces:
+                fn: aimnet.train.loss.peratom_loss_fn
+                weight: 0.2
+                kwargs:
+                    key_true: forces
+                    key_pred: forces
+            charges:
+                fn: aimnet.train.loss.peratom_loss_fn
+                weight: 0.05
+                kwargs:
+                    key_true: charges
+                    key_pred: charges
 
 optimizer:
     # lists of regular expressions for parameter names to enable or disable gradients
@@ -95,7 +95,7 @@ optimizer:
     # parameters with non-default optimizer settings
     param_groups:
         shifts:
-            re: '.*.atomic_shift.shifts.weight$'
+            re: ".*.atomic_shift.shifts.weight$"
             weight_decay: 0.0
 
 # class definition for learning rate scheduler
@@ -126,7 +126,7 @@ checkpoint:
 
 # wandb logger
 wandb:
-    init: 
+    init:
         name: ${run_name}
         mode: offline
         entity: null
@@ -144,7 +144,7 @@ metrics:
         cfg:
             energy:
                 abbr: E
-                scale: 23.06  # eV to kcal/mol
+                scale: 23.06 # eV to kcal/mol
             dipole:
                 abbr: D
                 scale: 1.0
@@ -164,7 +164,3 @@ metrics:
                 peratom: True
                 mult: 3
                 scale: 23.06
-
-
-
-

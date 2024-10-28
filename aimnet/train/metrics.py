@@ -86,7 +86,7 @@ def calculate_metrics(result, histogram=False, corrplot=False):
 
 
 class RegMultiMetric(Metric):
-    def __init__(self, cfg : List[Dict], loss_fn=None):
+    def __init__(self, cfg: List[Dict], loss_fn=None):
         super().__init__()
         self.cfg = cfg
         self.loss_fn = loss_fn
@@ -106,10 +106,10 @@ class RegMultiMetric(Metric):
         e = true - pred
         e = e.view(pred.shape[0], -1) if pred.ndim > true.ndim else e.view(-1)
         d = self.data[key]
-        d["sum_abs_err"] += e.abs().sum(-1).to(dtype=torch.double, device="cpu") # type: ignore[attr-defined]
-        d["sum_sq_err"] += e.pow(2).sum(-1).to(dtype=torch.double, device="cpu") # type: ignore[attr-defined]
-        d["sum_true"] += true.sum().to(dtype=torch.double, device="cpu") # type: ignore[attr-defined]
-        d["sum_sq_true"] += true.pow(2).sum().to(dtype=torch.double, device="cpu") # type: ignore[attr-defined]
+        d["sum_abs_err"] += e.abs().sum(-1).to(dtype=torch.double, device="cpu")  # type: ignore[attr-defined]
+        d["sum_sq_err"] += e.pow(2).sum(-1).to(dtype=torch.double, device="cpu")  # type: ignore[attr-defined]
+        d["sum_true"] += true.sum().to(dtype=torch.double, device="cpu")  # type: ignore[attr-defined]
+        d["sum_sq_true"] += true.pow(2).sum().to(dtype=torch.double, device="cpu")  # type: ignore[attr-defined]
 
     @reinit__is_reduced
     def update(self, output) -> None:
@@ -147,10 +147,10 @@ class RegMultiMetric(Metric):
             self.atoms = idist.all_reduce(self.atoms)
             self.samples = idist.all_reduce(self.samples)
             for k, loss in self.loss.items():
-                self.loss[k] = idist.all_reduce(loss) # type: ignore[attr-defined]
+                self.loss[k] = idist.all_reduce(loss)  # type: ignore[attr-defined]
             for k1, v1 in self.data.items():
                 for k2, v2 in v1.items():
-                    self.data[k1][k2] = idist.all_reduce(v2) # type: ignore[attr-defined]
+                    self.data[k1][k2] = idist.all_reduce(v2)  # type: ignore[attr-defined]
         self._is_reduced = True
 
         # compute
