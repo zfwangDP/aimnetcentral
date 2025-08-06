@@ -7,9 +7,11 @@ import torch
 from omegaconf import OmegaConf
 
 from aimnet.train import utils
+from aimnet.calculators.model_registry import get_model_path
 
 _default_model = os.path.join(os.path.dirname(__file__), "..", "models", "aimnet2.yaml")
 _default_config = os.path.join(os.path.dirname(__file__), "default_train.yaml")
+_default_load = get_model_path("aimnet2")
 
 
 @click.command()
@@ -23,7 +25,7 @@ _default_config = os.path.join(os.path.dirname(__file__), "default_train.yaml")
 @click.option(
     "--model", type=click.Path(exists=True), default=_default_model, help="Path to the model definition file."
 )
-@click.option("--load", type=click.Path(exists=True), default=None, help="Path to the model weights to load.")
+@click.option("--load", type=click.Path(exists=True), default=_default_load, help="Path to the model weights to load.")
 @click.option("--save", type=click.Path(), default=None, help="Path to save the model weights.")
 @click.option(
     "--no-default-config",
@@ -89,6 +91,7 @@ def train(config, model, load=None, save=None, args=None, no_default_config=Fals
         with idist.Parallel(backend="nccl", nproc_per_node=num_gpus) as parallel:  # type: ignore[attr-defined]
             parallel.run(run, num_gpus, model_cfg, train_cfg, load, save)
     else:
+        logging.info("Run training with single GPU")
         run(0, 1, model_cfg, train_cfg, load, save)
 
 
@@ -120,8 +123,12 @@ def run(local_rank, world_size, model_cfg, train_cfg, load, save):
     if load is not None:
         device = next(model.parameters()).device  # type: ignore[attr-defined]
         logging.info(f"Loading weights from file {load}")
-        sd = torch.load(load, map_location=device)
-        logging.info(utils.unwrap_module(model).load_state_dict(sd, strict=False))
+        if load.endswith(".jpt"):
+            model_from_zoo = torch.jit.load(get_model_path("aimnet2"), map_location=device)
+            logging.info(model.load_state_dict(model_from_zoo.state_dict(), strict=False))
+        else:
+            sd = torch.load(load, map_location=device)
+            logging.info(utils.unwrap_module(model).load_state_dict(sd, strict=False))
 
     # data loaders
     train_loader, val_loader = utils.get_loaders(train_cfg.data)
