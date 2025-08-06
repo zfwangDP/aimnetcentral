@@ -125,7 +125,7 @@ def run(local_rank, world_size, model_cfg, train_cfg, load, save):
         logging.info(f"Loading weights from file {load}")
         if load.endswith(".jpt"):
             model_from_zoo = torch.jit.load(get_model_path("aimnet2"), map_location=device)
-            logging.info(model.load_state_dict(model_from_zoo.state_dict(), strict=False))
+            logging.info(utils.unwrap_module(model).load_state_dict(model_from_zoo.state_dict(), strict=False))
         else:
             sd = torch.load(load, map_location=device)
             logging.info(utils.unwrap_module(model).load_state_dict(sd, strict=False))
